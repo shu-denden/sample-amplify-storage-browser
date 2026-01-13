@@ -5,15 +5,15 @@ export const storage = defineStorage({
   isDefault: true,
    access: (allow) => ({
     'public/*': [
-        allow.guest.to(['read', 'write', 'delete']),
-        allow.authenticated.to(['read', 'write', 'delete']),
+        allow.guest.to(['read']),
+        allow.authenticated.to(['read']),
     ],
     'admin/*': [
-        allow.groups(['admin']).to(['read', 'write', 'delete']),
-        allow.authenticated.to(['read', 'write'])
+        allow.groups(['admin']).to(['read']),
+        allow.authenticated.to(['read'])
     ],
     'private/{entity_id}/*': [
-        allow.entity('identity').to(['read', 'write', 'delete'])
+        allow.entity('identity').to(['read'])
     ]
    })
 });
