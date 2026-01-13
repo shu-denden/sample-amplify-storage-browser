@@ -5,12 +5,12 @@ export const storage = defineStorage({
   isDefault: true,
    access: (allow) => ({
     'public/*': [
-        allow.guest.to(['read', 'write']),
+        allow.guest.to(['read', 'write', 'delete']),
         allow.authenticated.to(['read', 'write', 'delete']),
     ],
     'admin/*': [
         allow.groups(['admin']).to(['read', 'write', 'delete']),
-        allow.authenticated.to(['read'])
+        allow.authenticated.to(['read', 'write'])
     ],
     'private/{entity_id}/*': [
         allow.entity('identity').to(['read', 'write', 'delete'])
@@ -19,17 +19,17 @@ export const storage = defineStorage({
 });
 
 export const secondaryStorage = defineStorage({
-  name: 'mySecondaryStorageBucket',
+  name: 'myTestStorageBucket',
    access: (allow) => ({
-    'backup_public/*': [
+    'Test_01/*': [
         allow.guest.to(['read', 'write']),
         allow.authenticated.to(['read', 'write', 'delete']),
     ],
-    'backup_admin/*': [
+    'Test_02/*': [
         allow.groups(['admin']).to(['read', 'write', 'delete']),
         allow.authenticated.to(['read'])
     ],
-    'backup_private/{entity_id}/*': [
+    'Test_03_entityId/{entity_id}/*': [
         allow.entity('identity').to(['read', 'write', 'delete'])
     ]
    })
