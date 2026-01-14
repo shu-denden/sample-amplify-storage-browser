@@ -2,7 +2,7 @@ import {
   // createAmplifyAuthAdapter, // Amplify CLIで作成されたストレージへの接続時に使用するもの
   // 既存のバケットに接続するためには、このアダプターを使用せず、listLocations と getLocationCredentials を独自に実装する必要がある。
   createStorageBrowser,
-  StorageLocation, // StorageLocation 型をインポート
+  // StorageLocation, // StorageLocation 型は別の場所からインポート
 } from '@aws-amplify/ui-react-storage/browser';
 import '@aws-amplify/ui-react-storage/styles.css';
 import './App.css';
@@ -12,6 +12,7 @@ import { Amplify } from 'aws-amplify';
 import { Authenticator, Button } from '@aws-amplify/ui-react';
 import { fetchAuthSession } from 'aws-amplify/auth'; // fetchAuthSession をインポート
 import { StorageAccessLevel } from '@aws-amplify/core'; // StorageAccessLevel をインポート
+import { Location } from '@aws-amplify/ui-react-storage/browser'; // StorageLocation -> Location に変更
 // Amplifyの設定
 Amplify.configure(config);
 
@@ -63,8 +64,8 @@ async function getS3Locations(): Promise<{ items: StorageLocation[]; nextToken: 
 // ここから getLocationCredentials 関数の定義
 // ================================================================
 async function getLocationCredentials(
-  input: StorageLocation
-): Promise<{ accessKeyId: string; secretAccessKey: string; sessionToken: string; expiration: Date }> {
+  input: Location
+): Promise<GetCredentialsOutput> {
   try {
     console.log('[getLocationCredentials] Fetching credentials for:', input.bucket, input.prefix);
     const session = await fetchAuthSession();
@@ -72,14 +73,19 @@ async function getLocationCredentials(
       throw new Error('No credentials found for authenticated user. Please ensure the user is logged in.');
     }
 
+    // @aws-amplify/ui-react-storage/browser から LocationCredentials 型をインポートするように修正
+    import { LocationCredentials } from '@aws-amplify/ui-react-storage/browser'; // ここにインポートを追加
+
     // Amplify Auth から取得した認証済みユーザーの一時クレデンシャルをそのまま返します。
     // このクレデンシャルは、ユーザーの IAM ロールに紐付けられた権限に基づいて S3 にアクセスします。
     return {
-      accessKeyId: session.credentials.accessKeyId,
-      secretAccessKey: session.credentials.secretAccessKey,
-      sessionToken: session.credentials.sessionToken || '', // sessionToken は必須項目
-      expiration: session.credentials.expiration || new Date(Date.now() + 3600 * 1000), // 有効期限、デフォルト1時間
-    };
+      credentials: { // StorageBrowserが期待する形式に合わせる
+        accessKeyId: session.credentials.accessKeyId,
+        secretAccessKey: session.credentials.secretAccessKey,
+        sessionToken: session.credentials.sessionToken || '',
+      },
+      expiration: session.credentials.expiration || new Date(Date.now() + 3600 * 1000),
+    } as LocationCredentials; // 型アサーションで明示的に指定
   } catch (error) {
     console.error('[getLocationCredentials] Error fetching credentials:', error);
     throw error;
@@ -98,7 +104,7 @@ const { StorageBrowser } = createStorageBrowser({
     getLocationCredentials: getLocationCredentials, // 自作の関数を割り当て
     // 認証状態の変化を Storage Browser に通知するリスナー。
     // 認証後に StorageBrowser がコンテンツをロードするために重要です。
-    registerAuthListener: (callback) => {
+    registerAuthListener: (_callback) => {
       // Amplify の Hub を利用して認証イベントをリッスンし、コールバック関数 (StorageBrowser のリフレッシュ) を呼び出す実装が推奨されます。
       // 例:
       // const authListener = Amplify.Hub.listen('auth', ({ payload: { event } }) => {
